@@ -26,7 +26,7 @@ export const signup = async (req, res) => {
     }
     //guardamos de forma asincrona el nuevo user
     const savedUser = await newUser.save();
-    console.log(savedUser)
+  
     //generacion de token
     const token = jwt.sign({ id: savedUser._id }, config.SECRET, { //ingreso el id del nuevo usuario, la palabra clave
         //tiempo de expiracion de token
@@ -36,5 +36,20 @@ export const signup = async (req, res) => {
 
 }
 export const signin = async (req, res) => {
-    res.json('signin')
+    //busco si el objeto existe mediante el email y lo almaceno en userFound
+    const userFound= await User.findOne({email:req.body.email})
+    //Si userFound no existe retorno, que no fue encontrado.
+    if(!userFound) return res.status(400).json({message:'Usuario no encontrado'})
+    //comparo las contraseñas 
+    const matchPassword = await User.comparePassword(req.body.password, userFound.password)
+    //Si no existe, lanzo el error
+    if(!matchPassword) return res.status(401).json({message:'Contraseña invalida'})
+
+    //Si existe, entro y le creo un token
+    const token = jwt.sign({ id: userFound._id }, config.SECRET, { //ingreso el id del nuevo usuario, la palabra clave
+        //tiempo de expiracion de token
+        expiresIn: 86400 //24hs
+    });
+
+    res.json({token})
 }
